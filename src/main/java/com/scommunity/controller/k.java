@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 public class k {
     @RequestMapping("/x")
-    @ResponseBody
     public String sdf(){
-        return "sdvf";
+        return "/site/register";
     }
 }
