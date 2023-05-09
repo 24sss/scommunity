@@ -2,6 +2,7 @@ package com.scommunity.service;
 
 import com.scommunity.dao.UserMapper;
 import com.scommunity.entity.User;
+import com.scommunity.util.CommunityConstant;
 import com.scommunity.util.CommunityUtil;
 import com.scommunity.util.MailClient;
 import org.junit.platform.commons.util.StringUtils;
@@ -23,7 +24,7 @@ import java.util.Random;
  * @date 2023/5/6 12:57
  */
 @Service
-public class UserService {
+public class UserService implements CommunityConstant {
     @Resource
     private UserMapper userMapper;
 
@@ -116,6 +117,11 @@ public class UserService {
         //希望服务器接收到的路径：
         //http://localhost:8080/sss/activation/101/code
         String url = domain+contextPath+"/activation/"+user.getId()+"/"+user.getActivationCode();
+        System.out.println(url);
+        System.out.println(domain);
+        System.out.println(contextPath);
+        System.out.println(user.getId());
+        System.out.println(user.getActivationCode());
         context.setVariable("url",url);
         //利用模板引擎生成邮件的内容
         String content = templateEngine.process("/mail/activation",context);
@@ -125,5 +131,28 @@ public class UserService {
         return map;
     }
 
+
+    /**激活
+     * 返回值：激活状态
+     * 接收的参数：用户id，激活码
+     *
+     * */
+    public int activation(int userId,String code){
+         User user = userMapper.selectById(userId);
+         //初始的时候他为0，激活之后他为1，如果他==1证明已经被激活了
+         if(user.getStatus()==1){
+             return ACTIVATION_REPEAT;
+
+         }//用户传过来的与数据库中的一样，可以激活成功
+         else if(user.getActivationCode().equals(code)){
+             //激活成功的话就把用户内部的状态改为已激活状态
+             userMapper.updateStatus(userId,1);
+             return ACTIVATION_SUCCESS;
+         }else {
+             return ACTIVATION_FAILURE;
+         }
+
+
+    }
 
 }

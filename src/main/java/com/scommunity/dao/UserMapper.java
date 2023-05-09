@@ -15,6 +15,7 @@ public interface UserMapper {
     User selectByName(String username);
     User selectByEmail(String email);
     int insertUser(User user);
+    //根据id修改状态，后面激活账号的时候用
     int updateStatus(int id,int status);
     //更新头像
     int updateHeader(int id,String headerUrl);
