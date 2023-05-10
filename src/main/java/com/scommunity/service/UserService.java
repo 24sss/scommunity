@@ -1,5 +1,6 @@
 package com.scommunity.service;
 
+import com.scommunity.dao.LoginTicketMapper;
 import com.scommunity.dao.UserMapper;
 import com.scommunity.entity.User;
 import com.scommunity.util.CommunityConstant;
@@ -27,6 +28,10 @@ import java.util.Random;
 public class UserService implements CommunityConstant {
     @Resource
     private UserMapper userMapper;
+
+    //登录的时候一定会用到这个
+    @Resource
+    private LoginTicketMapper loginTicketMapper;
 
     //因为要发邮件所以要注入客户端
     @Resource
@@ -154,5 +159,17 @@ public class UserService implements CommunityConstant {
 
 
     }
+
+    /**
+    登录的功能
+     */
+    /*
+    password需要加密后才可以与数据库中的password比较，因为数据库中的password是加密的
+    * */
+    public Map<String,Object> login(String username,String password,int expiredSeconds){
+         return null;
+    }
+
+
 
 }

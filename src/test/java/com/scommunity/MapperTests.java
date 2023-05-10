@@ -1,8 +1,10 @@
 package com.scommunity;
 
 import com.scommunity.dao.DiscussPostMapper;
+import com.scommunity.dao.LoginTicketMapper;
 import com.scommunity.dao.UserMapper;
 import com.scommunity.entity.DiscussPost;
+import com.scommunity.entity.LoginTicket;
 import com.scommunity.entity.User;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,6 +27,9 @@ import java.util.List;
 @SpringBootTest
 @ContextConfiguration(classes = ScommunityApplication.class)
 public class MapperTests {
+
+    @Resource
+    LoginTicketMapper loginTicketMapper;
     @Resource
     DiscussPostMapper discussPostMapper;
 
@@ -76,6 +81,29 @@ public class MapperTests {
         System.out.println(rows);
 
         rows =userMapper.updatePassword(150,"1234");
+    }
+
+
+    @Test
+    public void loginTicket(){
+        LoginTicket loginTicket = new LoginTicket();
+        loginTicket.setUserId(101);
+        loginTicket.setTicket("abc");
+        loginTicket.setStatus(0);
+        loginTicket.setExpired(new Date(System.currentTimeMillis()+1000*60*10));
+
+        loginTicketMapper.insertLoginTicket(loginTicket);
+
+    }
+
+    @Test
+    public void testselectloginticket(){
+        LoginTicket loginTicket = loginTicketMapper.selectByTicket("abc");
+        System.out.println(loginTicket);
+
+        loginTicketMapper.updateStatus("abc",0);
+        loginTicket = loginTicketMapper.selectByTicket("abc");
+        System.out.println(loginTicket);
     }
 
 }

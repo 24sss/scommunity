@@ -1,8 +1,11 @@
 package com.scommunity.controller;
 
+import com.google.code.kaptcha.Producer;
 import com.scommunity.entity.User;
 import com.scommunity.service.UserService;
 import com.scommunity.util.CommunityConstant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +13,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.annotation.Resource;
+import javax.imageio.ImageIO;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Map;
 
 /**
@@ -21,6 +31,13 @@ import java.util.Map;
 public class LoginController implements CommunityConstant {
     @Resource
     private UserService userService;
+
+    //创建日志对象
+    private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
+
+    //生成验证码
+    @Resource
+    private Producer kaptchaProducer;
 
     //前端点击首页中的注册按钮后，这个controller来处理，就进入register.html中填写数据
     @RequestMapping(path= "/register",method = RequestMethod.GET)
@@ -89,6 +106,51 @@ public class LoginController implements CommunityConstant {
 
         }
         return "/site/operate-result";
+    }
+
+    /**
+     首页点击登录的时候，发出一个get请求/login,
+     这个请求会返回一个html页面(逻辑在上方)，这个页面包含了
+     一张验证码链接，点击这个链接会发出新的请求，
+     我们在这里写一个controller来处理这个请求
+     也就是说在那个html页面中包含了这个链接
+     */
+    /**
+     * 这里我们向浏览器输出的是一张图片，不是字符串，也不是html，所以
+     * 返回值是void， 我们用response对象手动的去输出
+     *
+     */
+    @RequestMapping(value = "/kaptcha",method = RequestMethod.GET)
+    public void getKaptcha(HttpServletResponse response, HttpSession session){
+        /**
+         * 我们生成验证码之后，服务端要把它记住，
+         * 我们登录的时候要对他进行验证，看验证码对不对
+         * 验证码不能存在浏览器端，很容易被破解
+         * 所以存在服务器端
+         * 这次请求的时候生成验证码
+         * 登录的时候是一次新的请求，所以是跨请求的
+         * 所以我们存储在Session里面
+         */
+        //生成验证码
+        String text = kaptchaProducer.createText();
+        //利用验证码生成一个与之对应的图片
+        BufferedImage image = kaptchaProducer.createImage(text);
+
+        //将验证码存入session
+        session.setAttribute("kaptcha",text);
+
+        //将图片输出给浏览器
+        response.setContentType("image/png");
+        OutputStream outputStream = null;
+        try {
+            outputStream = response.getOutputStream();
+            ImageIO.write(image,"png",outputStream);
+
+        } catch (IOException e) {
+            logger.error("响应验证码失败"+e.getMessage());
+        }
+
+
     }
 
 
