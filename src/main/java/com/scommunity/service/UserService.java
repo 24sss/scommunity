@@ -2,6 +2,7 @@ package com.scommunity.service;
 
 import com.scommunity.dao.LoginTicketMapper;
 import com.scommunity.dao.UserMapper;
+import com.scommunity.entity.LoginTicket;
 import com.scommunity.entity.User;
 import com.scommunity.util.CommunityConstant;
 import com.scommunity.util.CommunityUtil;
@@ -14,10 +15,7 @@ import org.thymeleaf.context.Context;
 
 import javax.annotation.Resource;
 import javax.xml.crypto.Data;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author sss
@@ -163,13 +161,94 @@ public class UserService implements CommunityConstant {
     /**
     登录的功能
      */
-    /*
-    password需要加密后才可以与数据库中的password比较，因为数据库中的password是加密的
+    /**
+    password需要加密后才可以与数据库中的password比较，因为注册的时候数据库中的password是加密的
+    登录的时候可能成功、可能失败、失败的原因还不只一种，所以用Map来存储登陆结果（可以封装多种情况的结果）
+    expiredSeconds：过期时间（传入的是过期的秒数）
     * */
     public Map<String,Object> login(String username,String password,int expiredSeconds){
-         return null;
+        /**封装的是登陆后的结果，可能成功，可能失败，失败还有多种原因
+        * */
+        Map<String,Object> map = new HashMap<>();
+
+        /**空值的处理
+         * */
+        if(StringUtils.isBlank(username)){
+            /**map中封装不能登录的原因，比如这里就是账号不能为空
+             * 把map传给controller层，controller通过Model把
+             * map中的数据传给前端显示
+             * */
+            map.put("usernameMsg","账号不能为空");
+            return  map;
+        }
+        if(StringUtils.isBlank(password)){
+            map.put("passwordMsg","密码不能为空");
+            return  map;
+        }
+
+        /**验证账号
+         * */
+        /**在数据库里查有没有这个username，如果没有直接返回错误信息
+         * 如果有，再把password查出来，判断是否相同
+        * */
+        User user = userMapper.selectByName(username);
+        if(user==null){
+            map.put("usernameMsg","该账号不存在");
+            return map;
+        }
+
+        /**状态判断
+         * 因为注册之后，要通过邮件激活。如果没有激活也是不能登陆的
+         * 激活的意思：注册之后，后端会随机生成一个字符串，拼接上路径发送给邮箱，当用户
+         * 登录邮箱接收到这个路径的时候，点击这个链接，后端接收这个链接，判断
+         * 传过来的随机字符串是否等于发给邮箱的字符串
+         * 相等则激活成功，状态置为1，
+         * 不相等则激活失败，状态还是默认值0
+         *
+         * */
+        if(user.getStatus()==0){
+            map.put("usernameMsg","该账号未激活");
+            return map;
+        }
+        //验证密码
+        //注册的时候数据库存的是加密后的密码
+        password=CommunityUtil.md5(password+user.getSalt());
+        if (!user.getPassword().equals(password)) {
+            map.put("passwordMsg","密码不正确");
+                return map;
+            }
+
+        //登录成功
+        //生成登陆凭证，服务端记录下来，并传给客户端一个登陆凭证
+        LoginTicket loginTicket = new LoginTicket();
+        loginTicket.setUserId(user.getId());
+        loginTicket.setTicket(CommunityUtil.generateUUID());
+        //有效状态
+        loginTicket.setStatus(0);
+        //设置过期时间
+        loginTicket.setExpired(new Date(System.currentTimeMillis()+expiredSeconds*1000));
+
+        /**登录成功，登录凭证已经生成
+         * 返回时需要把凭证放进去，我们要把凭证发给客户端
+         * 可以把整个loginTicket全部发给客户端
+         * 也可以只把Ticket发给客户端，页面只需要记这个内容
+         * 浏览器只需要一个key，这是登录的凭证
+         * 下次访问服务器的的时候，把这个key给服务器，服务器去库里找
+         * 找到一条登录的数据，去看status（状态）和过期时间，还能看user_id（谁在登录）
+         * 如果status==0的状态 也没有过期，就是登录成功
+         * 作用相当于session
+        * */
+        map.put("ticket",loginTicket.getTicket());
+        return map;
     }
 
+    /**退出登录
+     * 把凭证给我，证明是谁在退出
+    * */
+    public void logout(String ticket){
+        //通过这个凭证，把状态改为1 （无效）
+     loginTicketMapper.updateStatus(ticket,1);
+    }
 
 
 }

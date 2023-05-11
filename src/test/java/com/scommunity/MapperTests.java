@@ -6,6 +6,8 @@ import com.scommunity.dao.UserMapper;
 import com.scommunity.entity.DiscussPost;
 import com.scommunity.entity.LoginTicket;
 import com.scommunity.entity.User;
+import com.scommunity.util.CommunityConstant;
+import com.scommunity.util.CommunityUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +55,7 @@ public class MapperTests {
         User user = userMapper.selectById(101);
         System.out.println(user);
 
-        User user1 = userMapper.selectByName("liubei");
+        User user1 = userMapper.selectByName("a6");
         System.out.println(user1);
 
         User user2  = userMapper.selectByEmail("nowcoder101@sina.com");
@@ -63,11 +65,12 @@ public class MapperTests {
     @Test
     public void testInsertUser(){
         User user = new User();
-        user.setUsername("测");
-        user.setPassword("123456");
+        user.setUsername("a5");
+        user.setPassword("a12345");
         user.setSalt("abc");
+        user.setStatus(1);
         user.setEmail("test@qq.com");
-        user.setHeaderUrl("http://www.nowcoder.com/101.png");
+       // user.setHeaderUrl("http://www.nowcoder.com/101.png");
         user.setCreateTime(new Date());
 
         int rows = userMapper.insertUser(user);
@@ -77,10 +80,14 @@ public class MapperTests {
 
     @Test
     public void updateUser(){
-        int rows = userMapper.updateStatus(150,1);
-        System.out.println(rows);
 
-        rows =userMapper.updatePassword(150,"1234");
+      //int rows =
+              userMapper.updateStatus(163,1);
+       // System.out.println(rows);
+
+       // rows =
+     /*   String s = CommunityUtil.md5("a12345");
+                userMapper.updatePassword(162,s);*/
     }
 
 

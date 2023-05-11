@@ -4,10 +4,13 @@ import com.google.code.kaptcha.Producer;
 import com.scommunity.entity.User;
 import com.scommunity.service.UserService;
 import com.scommunity.util.CommunityConstant;
+import org.junit.platform.commons.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
@@ -31,6 +35,10 @@ import java.util.Map;
 public class LoginController implements CommunityConstant {
     @Resource
     private UserService userService;
+
+    //整个项目的路径
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
 
     //创建日志对象
     private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
@@ -153,6 +161,68 @@ public class LoginController implements CommunityConstant {
 
     }
 
+
+    /**
+     * 接收表单提交给我的数据，所以请求方式是Post
+     * username:用户名
+     * password:密码
+     * code:验证码
+     * rememberme:是否勾选了记住我
+     * model:返回给客户端的数据
+     * session:生成的验证码在服务端保存在了session中，我们要判断用户输入的验证码code与之前生成的验证码是否一致
+     * response:如果登陆成功，我们要把ticket发放给客户端来保存，用cookie来保存
+     */
+    @RequestMapping(path = "/login",method = RequestMethod.POST)
+    public String login(String username,String password,String code,boolean rememberme,Model model,
+                        HttpSession session,HttpServletResponse response){
+
+        /**先判断验证码对不对
+         * 是不是空
+         * 忽略大小写：equalsIgnoreCase
+        * */
+        String kaptcha = (String) session.getAttribute("kaptcha");
+        if(StringUtils.isBlank(kaptcha)||StringUtils.isBlank(code)||!kaptcha.equalsIgnoreCase(code)){
+           model.addAttribute("codeMsg","验证码不正确");
+           return "/site/login";
+        }
+
+        /**检查账号、密码
+         * 还有一个参数是过期时间
+         * 我们定义两个常量，代表”记住我“和“不记住我”各自的超时时间
+         * 用哪个值呢，我们得看用户有没有勾选记住我
+        * */
+        /**过期时间：我们根据用户有没有勾选记住我，有不同的过期时间
+         * */
+        int expiredSeconds=rememberme?REMEMBER_EXPIRED_SECONDS:DEFAULT_EXPIRED_SECONDS;
+        Map<String, Object> map = userService.login(username, password, expiredSeconds);
+        //如果map里有ticket证明登陆成功
+        if(map.containsKey("ticket")){
+            //登录成功的话，向客户端发送一个携带ticket（登陆凭证）的cookie
+            Cookie cookie = new Cookie("ticket",map.get("ticket").toString());
+            //登录成功后，生效范围应该是整个项目；
+            cookie.setPath(contextPath);
+            //设置cookie的有效时间
+            cookie.setMaxAge(expiredSeconds);
+            //把cookie添加至response，在响应的时候就发送给客户端了
+            response.addCookie(cookie);
+            return "redirect:/index";
+        }else{
+            //登录失败
+            model.addAttribute("usernameMsg",map.get("usernameMsg"));
+            model.addAttribute("passwordMsg",map.get("passwordMsg"));
+            return "/site/login";
+        }
+
+
+    }
+
+    /**退出的请求
+     * */
+    @RequestMapping(path = "/logout",method = RequestMethod.GET)
+    public String logout(@CookieValue("ticket") String ticket){
+        userService.logout(ticket);
+        return "redirect:/login";
+    }
 
 
 }
