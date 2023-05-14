@@ -113,4 +113,11 @@ public class MapperTests {
         System.out.println(loginTicket);
     }
 
+
+    @Test
+    public void testgettaticket(){
+        LoginTicket loginTicket = loginTicketMapper.selectByTicket("3d822c0d68884456bbe79669f8935820");
+        System.out.println(loginTicket);
+    }
+
 }

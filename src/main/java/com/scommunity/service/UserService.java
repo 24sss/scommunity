@@ -233,11 +233,13 @@ public class UserService implements CommunityConstant {
          * 可以把整个loginTicket全部发给客户端
          * 也可以只把Ticket发给客户端，页面只需要记这个内容
          * 浏览器只需要一个key，这是登录的凭证
-         * 下次访问服务器的的时候，把这个key给服务器，服务器去库里找
+         * 下次访问服务器的的时候，把这个key(ticket)给服务器，服务器去库里找
          * 找到一条登录的数据，去看status（状态）和过期时间，还能看user_id（谁在登录）
          * 如果status==0的状态 也没有过期，就是登录成功
          * 作用相当于session
         * */
+        //服务端记录下来（存入数据库）
+        loginTicketMapper.insertLoginTicket(loginTicket);
         map.put("ticket",loginTicket.getTicket());
         return map;
     }
@@ -250,5 +252,19 @@ public class UserService implements CommunityConstant {
      loginTicketMapper.updateStatus(ticket,1);
     }
 
+
+    /**根据ticket查询LoginTicket
+     * */
+    public LoginTicket findLoginTicket(String ticket){
+        return loginTicketMapper.selectByTicket(ticket);
+    }
+
+
+    /**
+     * 更新头像的路径
+     * */
+    public int updateHeader(int userId,String url){
+        return userMapper.updateHeader(userId,url);
+    }
 
 }

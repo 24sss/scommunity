@@ -24,8 +24,7 @@ public interface LoginTicketMapper {
     //把ticket给服务器，我们就利用ticket查到整条数据。我们就知道是哪个用户在登陆访问
     //ticket是一个唯一的标识，不能重复
     @Select({
-            "select id,user_id,ticket,status,expired ",
-            "from login_ticket where ticket=#{ticket}"
+            "select id,user_id,ticket,status,expired from login_ticket where ticket=#{ticket}"
     })
     LoginTicket selectByTicket(String ticket);
 
